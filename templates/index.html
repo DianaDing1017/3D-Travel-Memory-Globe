@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Earth Explorer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body { 
+            margin: 0; 
+            background: #000;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+        }
+        canvas { 
+            display: block; 
+        }
+        #info {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        #search {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px 20px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        #search input {
+            padding: 12px 20px;
+            width: 300px;
+            border-radius: 25px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        #search input:focus {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        #search input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        #search button {
+            padding: 12px 25px;
+            border-radius: 25px;
+            border: none;
+            background: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+        #search button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        #zoom-controls {
+            display: flex;
+            gap: 10px;
+        }
+        #zoom-controls button {
+            padding: 8px 15px;
+            border-radius: 25px;
+            border: none;
+            background: #4CAF50;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #zoom-controls button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        .location-info {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .location-info.visible {
+            opacity: 1;
+        }
+        #modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 30, 30, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            z-index: 1000;
+            color: white;
+            min-width: 400px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        #modal.show {
+            display: block;
+        }
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 999;
+        }
+        #modal-overlay.show {
+            display: block;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .close-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0 8px;
+        }
+        .modal-content {
+            margin-bottom: 20px;
+        }
+        .media-preview {
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .media-preview img, .media-preview video {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: #4CAF50;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .upload-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .upload-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="info">🌍 Earth Explorer</div>
+    <div id="search">
+        <input type="text" id="cityInput" placeholder="Search for a city...">
+        <button onclick="searchLocation()">Search</button>
+        <div id="zoom-controls">
+            <button onclick="zoomIn()">+</button>
+            <button onclick="zoomOut()">-</button>
+        </div>
+    </div>
+    <div id="locationInfo" class="location-info"></div>
+    <div id="modal-overlay"></div>
+    <div id="modal">
+        <div class="modal-header">
+            <div class="modal-title">Location Details</div>
+            <button class="close-button" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-content">
+            <h2 id="location-name"></h2>
+            <p id="location-coords"></p>
+            <div class="upload-area" onclick="document.getElementById('media-upload').click()">
+                <p>Click or drag files here to upload</p>
+                <p>Supports images and videos</p>
+            </div>
+            <input type="file" id="media-upload" multiple accept="image/*,video/*" style="display: none" onchange="handleFileUpload(event)">
+            <div class="media-preview" id="media-preview"></div>
+        </div>
+    </div>
+    <script>
+        let scene, camera, renderer, earth, markers = [], controls, stars;
+        const locations = [
+            { name: 'Seattle', lat: 47.6062, lon: -122.3321 },
+            { name: 'Beijing', lat: 39.9042, lon: 116.4074 },
+            { name: 'Tokyo', lat: 35.6762, lon: 139.6503 },
+            { name: 'London', lat: 51.5074, lon: -0.1278 },
+            { name: 'Paris', lat: 48.8566, lon: 2.3522 },
+            { name: 'New York', lat: 40.7128, lon: -74.0060 },
+            { name: 'Sydney', lat: -33.8688, lon: 151.2093 },
+            { name: 'Dubai', lat: 25.2048, lon: 55.2708 },
+            { name: 'Singapore', lat: 1.3521, lon: 103.8198 },
+            { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729 }
+        ];
+
+        init();
+        animate();
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 2000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            // 添加星空背景
+            const starsGeometry = new THREE.BufferGeometry();
+            const starsMaterial = new THREE.PointsMaterial({
+                color: 0xFFFFFF,
+                size: 0.1,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const starsVertices = [];
+            for (let i = 0; i < 10000; i++) {
+                const x = (Math.random() - 0.5) * 2000;
+                const y = (Math.random() - 0.5) * 2000;
+                const z = (Math.random() - 0.5) * 2000;
+                starsVertices.push(x, y, z);
+            }
+
+            starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+            stars = new THREE.Points(starsGeometry, starsMaterial);
+            scene.add(stars);
+
+            // 创建地球
+            const geometry = new THREE.SphereGeometry(90, 64, 64);
+            const texture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg');
+            const material = new THREE.MeshPhongMaterial({ 
+                map: texture,
+                specular: new THREE.Color(0x333333),
+                shininess: 5
+            });
+            earth = new THREE.Mesh(geometry, material);
+            scene.add(earth);
+
+            // 添加环境光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            // 添加定向光
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 3, 5);
+            scene.add(directionalLight);
+
+            camera.position.z = 200;
+            camera.position.y = -30;
+
+            // 添加轨道控制
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.rotateSpeed = 0.5;
+            controls.minDistance = 150;
+            controls.maxDistance = 300;
+
+            // 添加标记点
+            locations.forEach(location => {
+                addMarker(location.lat, location.lon, location.name);
+            });
+
+            // 添加鼠标事件
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('click', onMouseClick);
+        }
+
+        function addMarker(lat, lon, name) {
+            const markerGeometry = new THREE.SphereGeometry(0.8, 16, 16);
+            const markerMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xff4444,
+                transparent: true,
+                opacity: 0.8
+            });
+            const marker = new THREE.Mesh(markerGeometry, markerMaterial);
+
+            // 将经纬度转换为3D坐标
+            const phi = (90 - lat) * (Math.PI / 180);
+            const theta = (lon + 180) * (Math.PI / 180);
+            const radius = 90.2;
+
+            marker.position.x = -(radius * Math.sin(phi) * Math.cos(theta));
+            marker.position.y = radius * Math.cos(phi);
+            marker.position.z = radius * Math.sin(phi) * Math.sin(theta);
+
+            marker.userData = { name: name, lat: lat, lon: lon };
+            earth.add(marker);
+            markers.push(marker);
+        }
+
+        function onMouseMove(event) {
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(markers);
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer';
+                const locationInfo = document.getElementById('locationInfo');
+                locationInfo.textContent = `${intersects[0].object.userData.name} (${intersects[0].object.userData.lat.toFixed(2)}°, ${intersects[0].object.userData.lon.toFixed(2)}°)`;
+                locationInfo.classList.add('visible');
+            } else {
+                document.body.style.cursor = 'default';
+                document.getElementById('locationInfo').classList.remove('visible');
+            }
+        }
+
+        function onMouseClick(event) {
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObjects(markers);
+            if (intersects.length > 0) {
+                const marker = intersects[0].object;
+                const locationData = marker.userData;
+                showModal(locationData);
+                
+                marker.scale.set(1.5, 1.5, 1.5);
+                setTimeout(() => {
+                    marker.scale.set(1, 1, 1);
+                }, 200);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            
+            // 旋转星空背景
+            stars.rotation.y += 0.0001;
+            
+            renderer.render(scene, camera);
+        }
+
+        function searchLocation() {
+            const city = document.getElementById('cityInput').value;
+            if (city) {
+                fetch(`/api/location/${city}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert('Location not found');
+                            return;
+                        }
+                        addMarker(data.lat, data.lon, data.name);
+                        document.getElementById('cityInput').value = '';
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error searching for location');
+                    });
+            }
+        }
+
+        function zoomIn() {
+            const currentDistance = camera.position.length();
+            const targetDistance = Math.max(currentDistance - 2, controls.minDistance);
+            animateZoom(currentDistance, targetDistance);
+        }
+
+        function zoomOut() {
+            const currentDistance = camera.position.length();
+            const targetDistance = Math.min(currentDistance + 2, controls.maxDistance);
+            animateZoom(currentDistance, targetDistance);
+        }
+
+        function animateZoom(startDistance, targetDistance) {
+            const duration = 500; // 动画持续时间（毫秒）
+            const startTime = performance.now();
+            
+            function updateZoom(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // 使用缓动函数使动画更平滑
+                const easeProgress = 1 - Math.pow(1 - progress, 3);
+                
+                const currentDistance = startDistance + (targetDistance - startDistance) * easeProgress;
+                camera.position.normalize().multiplyScalar(currentDistance);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateZoom);
+                }
+            }
+            
+            requestAnimationFrame(updateZoom);
+        }
+
+        function showModal(locationData) {
+            document.getElementById('location-name').textContent = locationData.name;
+            document.getElementById('location-coords').textContent = 
+                `Coordinates: ${locationData.lat.toFixed(4)}°, ${locationData.lon.toFixed(4)}°`;
+            document.getElementById('modal').classList.add('show');
+            document.getElementById('modal-overlay').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+            document.getElementById('modal-overlay').classList.remove('show');
+        }
+
+        function handleFileUpload(event) {
+            const files = event.target.files;
+            const preview = document.getElementById('media-preview');
+            
+            for (const file of files) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        preview.appendChild(img);
+                    }
+                    reader.readAsDataURL(file);
+                } else if (file.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = URL.createObjectURL(file);
+                    video.controls = true;
+                    preview.appendChild(video);
+                }
+            }
+        }
+
+        // 点击遮罩层关闭模态框
+        document.getElementById('modal-overlay').addEventListener('click', closeModal);
+
+        // 响应窗口大小变化
+        window.addEventListener('resize', onWindowResize, false);
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+</html> 
