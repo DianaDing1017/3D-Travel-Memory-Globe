@@ -118,7 +118,11 @@
             border-radius: 15px;
             z-index: 1000;
             color: white;
-            min-width: 400px;
+            min-width: 500px;
+            max-width: 800px;
+            width: 80%;
+            max-height: 80vh;
+            overflow-y: auto;
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         }
@@ -224,9 +228,15 @@
             <p id="location-coords"></p>
             <div class="upload-area" onclick="document.getElementById('media-upload').click()">
                 <p>Click or drag files here to upload</p>
-                <p>Supports images and videos</p>
+                <p>Supports images (PNG, JPG, GIF) and videos (MP4, MOV)</p>
             </div>
             <input type="file" id="media-upload" multiple accept="image/*,video/*" style="display: none" onchange="handleFileUpload(event)">
+            <div id="upload-progress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress" style="width: 0%"></div>
+                </div>
+                <p class="progress-text">Uploading... 0%</p>
+            </div>
             <div class="media-preview" id="media-preview"></div>
         </div>
     </div>
@@ -448,39 +458,95 @@
             requestAnimationFrame(updateZoom);
         }
 
+        let currentLocationId = null;
+
         function showModal(locationData) {
+            currentLocationId = locationData.name;  // 使用地点名称作为ID
             document.getElementById('location-name').textContent = locationData.name;
             document.getElementById('location-coords').textContent = 
                 `Coordinates: ${locationData.lat.toFixed(4)}°, ${locationData.lon.toFixed(4)}°`;
             document.getElementById('modal').classList.add('show');
             document.getElementById('modal-overlay').classList.add('show');
+            
+            // 加载该位置的现有媒体文件
+            loadLocationMedia(currentLocationId);
+        }
+
+        function loadLocationMedia(locationId) {
+            fetch(`/api/location/${locationId}/media`)
+                .then(response => response.json())
+                .then(mediaList => {
+                    const preview = document.getElementById('media-preview');
+                    preview.innerHTML = '';  // 清除现有内容
+                    
+                    mediaList.forEach(media => {
+                        if (media.type.startsWith('image/')) {
+                            const img = document.createElement('img');
+                            img.src = media.url;
+                            preview.appendChild(img);
+                        } else if (media.type.startsWith('video/')) {
+                            const video = document.createElement('video');
+                            video.src = media.url;
+                            video.controls = true;
+                            preview.appendChild(video);
+                        }
+                    });
+                })
+                .catch(error => console.error('Error loading media:', error));
+        }
+
+        async function handleFileUpload(event) {
+            const files = event.target.files;
+            const preview = document.getElementById('media-preview');
+            const progress = document.getElementById('upload-progress');
+            const progressBar = progress.querySelector('.progress');
+            const progressText = progress.querySelector('.progress-text');
+            
+            for (const file of files) {
+                progress.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressText.textContent = 'Uploading... 0%';
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('location_id', currentLocationId);
+                
+                try {
+                    const response = await fetch('/api/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        if (file.type.startsWith('image/')) {
+                            const img = document.createElement('img');
+                            img.src = result.url;
+                            preview.appendChild(img);
+                        } else if (file.type.startsWith('video/')) {
+                            const video = document.createElement('video');
+                            video.src = result.url;
+                            video.controls = true;
+                            preview.appendChild(video);
+                        }
+                    } else {
+                        console.error('Upload failed:', result.error);
+                    }
+                } catch (error) {
+                    console.error('Upload error:', error);
+                }
+                
+                progress.style.display = 'none';
+            }
+            
+            // 清除文件选择
+            event.target.value = '';
         }
 
         function closeModal() {
             document.getElementById('modal').classList.remove('show');
             document.getElementById('modal-overlay').classList.remove('show');
-        }
-
-        function handleFileUpload(event) {
-            const files = event.target.files;
-            const preview = document.getElementById('media-preview');
-            
-            for (const file of files) {
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        preview.appendChild(img);
-                    }
-                    reader.readAsDataURL(file);
-                } else if (file.type.startsWith('video/')) {
-                    const video = document.createElement('video');
-                    video.src = URL.createObjectURL(file);
-                    video.controls = true;
-                    preview.appendChild(video);
-                }
-            }
         }
 
         // 点击遮罩层关闭模态框
