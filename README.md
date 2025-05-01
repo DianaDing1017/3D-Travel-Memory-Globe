@@ -73,3 +73,76 @@ This project is a creative fusion of geography, memory, and interaction — **a 
 ## 📁 Client info
 
 Fiona Xu (jingx23@uw.edu)
+
+## 💻 Virtual Environment Setup (Windows)
+
+This project uses a Python virtual environment for dependency management.
+
+1. Ensure you have Python 3.9+ installed. You can verify with:
+
+   ```powershell
+   python --version
+   ```
+
+2. Create a virtual environment in your project directory:
+
+   ```powershell
+   python -m venv venv
+   ```
+
+3. Activate the environment (Windows PowerShell):
+
+   ```powershell
+   .\venv\Scripts\activate
+   ```
+
+   If you're using VS Code, the environment may auto-activate (you'll see `(venv)` in the terminal or a message in the corner).
+
+4. Install dependencies:
+
+   ```powershell
+   pip install -r requirements.txt
+   ```
+
+Now you're ready to run the app.
+
+
+## 🛠️ Local Setup & Project Progress
+
+### 🔧 Setup Instructions (Run Locally)
+
+To run this project locally:
+
+1. **Clone the repository**
+   ```
+   git clone https://github.com/DianaDing1017/3D-Travel-Memory-Globe.git
+   cd 3D-Travel-Memory-Globe
+   ```
+
+2. **Create and activate virtual environment (Windows)**
+   ```
+   python -m venv venv
+   .\venv\Scripts\activate
+   ```
+
+3. **Install dependencies**
+   ```
+   pip install -r requirements.txt
+   ```
+
+4. **Run the app**
+   ```
+   python app.py
+   ```
+   The app will be accessible at: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+---
+
+### 📌 Project Progress
+
+- ✅ Flask backend initialized and running locally  
+- ✅ Geopy integrated for location coordinate lookup  
+- ✅ Firebase Storage & Firestore successfully storing uploaded media  
+- ✅ Basic upload and retrieval API completed  
+- 🚧 Currently building UI to display uploaded content by location  
+- 🔜 Next: Add user authentication and timeline sorting
