@@ -63,7 +63,7 @@ This project uses a Python virtual environment for dependency management.
    pip install -r requirements.txt
    ```
 
-Now you're ready to run the app.
+Now All Set.
 
 
 ## 🛠️ Local Setup & Project Progress
