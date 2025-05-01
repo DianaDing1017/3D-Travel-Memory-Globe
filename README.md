@@ -32,3 +32,35 @@ Unlike Google Earth or TravelMap, which focus on route exploration or satellite 
 - 🗂 Local or cloud-based file storage for user-uploaded media.
 - 🧭 Optional timeline view to scroll through journeys chronologically.
 - ✨ Clean, responsive UI design emphasizing emotional memory
+
+## 💻 Virtual Environment Setup (Windows)
+
+This project uses a Python virtual environment for dependency management.
+
+1. Ensure you have Python 3.9+ installed. You can verify with:
+
+   ```powershell
+   python --version
+   ```
+
+2. Create a virtual environment in your project directory:
+
+   ```powershell
+   python -m venv venv
+   ```
+
+3. Activate the environment (Windows PowerShell):
+
+   ```powershell
+   .\venv\Scripts\activate
+   ```
+
+   If you're using VS Code, the environment may auto-activate (you'll see `(venv)` in the terminal or a message in the corner).
+
+4. Install dependencies:
+
+   ```powershell
+   pip install -r requirements.txt
+   ```
+
+Now you're ready to run the app.
