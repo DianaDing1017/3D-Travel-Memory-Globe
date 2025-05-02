@@ -145,4 +145,57 @@ To run this project locally:
 - ✅ Firebase Storage & Firestore successfully storing uploaded media  
 - ✅ Basic upload and retrieval API completed  
 - 🚧 Currently building UI to display uploaded content by location  
-- 🔜 Next: Add user authentication and timeline sorting
+- 🔜 Next: Add user authenticatiogit add README.md
+
+
+
+## 📝 Client Feedback: 3D Earth Explorer
+
+### ✅ Features Reviewed
+
+- **Interactive 3D Globe**  
+  Users can explore a 3D-rendered Earth with mouse interaction using `three.js` and `OrbitControls`.
+
+- **City Search & Marker Placement**  
+  Users can input city names to dynamically add new markers via backend API calls.
+
+- **Location Detail Modal with Media Upload**  
+  Clicking on a marker opens a modal showing the location name, coordinates, and an area to upload related media (images/videos).
+
+---
+
+### 🟩 Approved Features
+
+- The 3D interaction and visual presentation are well-crafted and provide a smooth user experience.
+- Modal design is clear, elegant, and effectively displays uploaded media.
+- Zoom buttons and marker hover interactions add polish and usability.
+
+---
+
+### 🐞 Bugs Identified
+
+- Users are currently unable to search for place names independently.
+- The number of place names is not all large.
+
+---
+
+### 💡 Suggested Improvements
+
+1. **Input Validation & Error UI**  
+   Improve feedback when a city isn't found—e.g., highlight the input box or show a styled error message instead of just an alert.
+
+2. **Increase the number of cities and improve the icon display**  
+   When fetching or uploading files, consider adding a loading spinner to improve clarity and feedback.
+
+---
+
+### 📘 Reflection & Next Steps
+
+- Developer has successfully implemented **3+ core features** and demonstrated good front-end architecture.
+
+
+- **Suggested next focus areas**:
+  - Improve the overall UI design and hope that the interface will be more interesting.
+  - Fix mobile layout responsiveness and modal display edge cases.
+
+Keep up the great work!
