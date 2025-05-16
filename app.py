@@ -1,51 +1,41 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut
-import firebase_admin
-from firebase_admin import credentials, storage, firestore
 import os
 from datetime import datetime
 from werkzeug.utils import secure_filename
 import uuid
-import tempfile
+import json
 
 app = Flask(__name__)
 
 # 初始化地理编码器
-geolocator = Nominatim(user_agent="my_earth_app")
+geolocator = Nominatim(user_agent="travelmap_3d_globe_app", timeout=10)
 
-try:
-    # 初始化 Firebase
-    cred = credentials.Certificate('firebase-key.json')
-    firebase_admin.initialize_app(cred, {
-        'storageBucket': 'travelmap-developer.appspot.com'  # 使用你的项目ID
-    })
-    
-    # 获取 Firebase 服务
-    db = firestore.client()
-    bucket = storage.bucket()
-    print("Firebase initialized successfully!")
-except Exception as e:
-    print(f"Error initializing Firebase: {str(e)}")
-    
+# 设置上传文件夹
+UPLOAD_FOLDER = 'static/uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov'}
-TEMP_FOLDER = tempfile.gettempdir()  # 使用系统临时目录
+
+# 确保上传文件夹存在
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_coordinates(city):
     try:
-        location = geolocator.geocode(city)
+        location = geolocator.geocode(city, language='en')
         if location:
             return {
                 "lat": location.latitude,
                 "lon": location.longitude,
-                "name": city
+                "name": location.address.split(',')[0]
             }
         return None
     except GeocoderTimedOut:
-        return None
+        return {"error": "Geocoding service timed out. Please try again."}
+    except Exception as e:
+        return {"error": f"Error searching location: {str(e)}"}
 
 @app.route('/')
 def index():
@@ -53,85 +43,114 @@ def index():
 
 @app.route('/api/location/<city>')
 def get_location(city):
-    coordinates = get_coordinates(city)
-    if coordinates:
-        return jsonify(coordinates)
-    return jsonify({"error": "Location not found"}), 404
+    try:
+        coordinates = get_coordinates(city)
+        if coordinates and "error" not in coordinates:
+            return jsonify(coordinates)
+        return jsonify({"error": coordinates.get("error", "Location not found")}), 404
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+@app.route('/static/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    
-    file = request.files['file']
-    location_id = request.form.get('location_id')
-    
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-    
-    if file and allowed_file(file.filename):
-        try:
-            # 生成唯一文件名
-            filename = secure_filename(file.filename)
-            unique_filename = f"{uuid.uuid4()}_{filename}"
+    try:
+        print('Upload request received')
+        if 'file' not in request.files:
+            print('No file part in request')
+            return jsonify({'error': 'No file part'}), 400
             
-            # 创建临时文件
-            temp_path = os.path.join(TEMP_FOLDER, unique_filename)
-            file.save(temp_path)
+        file = request.files['file']
+        if file.filename == '':
+            print('No selected file')
+            return jsonify({'error': 'No selected file'}), 400
             
-            try:
-                # 上传到 Firebase Storage
-                blob = bucket.blob(f'media/{unique_filename}')
-                blob.upload_from_filename(temp_path)
-                
-                # 设置文件为公开访问
-                blob.make_public()
-                
-                # 保存文件信息到 Firestore
-                media_ref = db.collection('media').document()
-                media_ref.set({
-                    'location_id': location_id,
-                    'filename': filename,
-                    'storage_path': f'media/{unique_filename}',
-                    'url': blob.public_url,
-                    'type': file.content_type or filename.rsplit('.', 1)[1].lower(),
-                    'uploaded_at': datetime.utcnow()
-                })
-                
-                return jsonify({
-                    'message': 'File uploaded successfully',
-                    'url': blob.public_url,
-                    'id': media_ref.id
-                })
-                
-            except Exception as e:
-                return jsonify({'error': f'Firebase error: {str(e)}'}), 500
+        if not allowed_file(file.filename):
+            print('File type not allowed:', file.filename)
+            return jsonify({'error': 'File type not allowed'}), 400
             
-            finally:
-                # 确保临时文件被删除
-                if os.path.exists(temp_path):
-                    os.remove(temp_path)
-                    
-        except Exception as e:
-            return jsonify({'error': f'Server error: {str(e)}'}), 500
+        location_id = request.form.get('location_id')
+        if not location_id:
+            print('No location_id provided')
+            return jsonify({'error': 'No location_id provided'}), 400
             
-    return jsonify({'error': 'File type not allowed'}), 400
+        print('Processing file:', file.filename)
+        print('Location ID:', location_id)
+        
+        # 生成唯一文件名
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
+        
+        print('Saving file to:', file_path)
+        file.save(file_path)
+        print('File saved successfully')
+        
+        # 创建媒体记录
+        media = {
+            'id': str(uuid.uuid4()),
+            'location_id': location_id,
+            'filename': filename,
+            'file_path': file_path,
+            'url': f"/static/uploads/{unique_filename}",
+            'type': file.content_type,
+            'created_at': datetime.now().isoformat()
+        }
+        
+        # 保存媒体信息
+        media_list = []
+        if os.path.exists(os.path.join(UPLOAD_FOLDER, 'media.json')):
+            with open(os.path.join(UPLOAD_FOLDER, 'media.json'), 'r', encoding='utf-8') as f:
+                media_list = json.load(f)
+                
+        media_list.append(media)
+        
+        with open(os.path.join(UPLOAD_FOLDER, 'media.json'), 'w', encoding='utf-8') as f:
+            json.dump(media_list, f, ensure_ascii=False, indent=2)
+            
+        print('Media record saved')
+        return jsonify(media)
+        
+    except Exception as e:
+        print('Upload error:', str(e))
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/location/<location_id>/media', methods=['GET'])
 def get_location_media(location_id):
     try:
-        # 查询指定位置的所有媒体文件
-        media_refs = db.collection('media').where('location_id', '==', location_id).stream()
-        media_list = []
-        
-        for media in media_refs:
-            media_data = media.to_dict()
-            media_data['id'] = media.id
-            media_list.append(media_data)
+        print('Getting media for location:', location_id)
+        if not os.path.exists(os.path.join(UPLOAD_FOLDER, 'media.json')):
+            print('No media.json file found')
+            return jsonify([])
             
-        return jsonify(media_list)
+        with open(os.path.join(UPLOAD_FOLDER, 'media.json'), 'r', encoding='utf-8') as f:
+            media_list = json.load(f)
+            
+        location_media = [m for m in media_list if m['location_id'] == location_id]
+        print('Found media:', location_media)
+        return jsonify(location_media)
         
     except Exception as e:
+        print('Error getting media:', str(e))
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/gallery')
+def gallery():
+    return render_template('gallery.html')
+
+@app.route('/api/all-media')
+def get_all_media():
+    try:
+        if not os.path.exists(os.path.join(UPLOAD_FOLDER, 'media.json')):
+            return jsonify([])
+        with open(os.path.join(UPLOAD_FOLDER, 'media.json'), 'r', encoding='utf-8') as f:
+            media_list = json.load(f)
+        return jsonify(media_list)
+    except Exception as e:
+        print('Error getting all media:', str(e))
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

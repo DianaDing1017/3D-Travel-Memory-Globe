@@ -1,6 +1,6 @@
 # 🌍 3D Travel Memory Globe
 
-An interactive 3D web application for visualizing and recording travel memories on a rotating digital globe. Users can place “memory pins” at locations they've visited, upload photos, write reflections, and relive global experiences in an emotional and immersive way.
+An interactive 3D web application for visualizing and recording travel memories on a rotating digital globe. Users can place "memory pins" at locations they've visited, upload photos, write reflections, and relive global experiences in an emotional and immersive way.
 
 ---
 
@@ -8,18 +8,18 @@ An interactive 3D web application for visualizing and recording travel memories 
 
 ### 🔍 Project Objectives
 
-This project aims to build an **interactive 3D globe web application** where users can **record and relive their travel memories**. By placing multimedia-rich “memory pins” on a rotating Earth interface, the platform encourages storytelling through photos, text, and sounds tied to specific locations. It provides a more **emotional and artistic experience** than traditional route-focused travel maps.
+This project aims to build an **interactive 3D globe web application** where users can **record and relive their travel memories**. By placing multimedia-rich "memory pins" on a rotating Earth interface, the platform encourages storytelling through photos, text, and sounds tied to specific locations. It provides a more **emotional and artistic experience** than traditional route-focused travel maps.
 
 ---
 
 ### 🎯 Target Users and Their Needs
 
-| User Type         | Needs                                                                 |
-|------------------|----------------------------------------------------------------------|
-| Casual Travelers | A beautiful and fun way to log and revisit personal travel moments.  |
-| Visual Thinkers  | A globe-centric, visual-first storytelling medium.                   |
-| Creatives        | Tools to present travel stories with images, text, and ambient sound.|
-| Private Users    | The ability to keep memories personal or selectively share them.     |
+| User Type             | Needs                                                                 |
+|---------------------|-----------------------------------------------------------------------|
+| Casual Travelers     | A beautiful and fun way to log and revisit personal travel moments.   |
+| Visual Thinkers      | A globe-centric, visual-first storytelling medium.                        |
+| Creatives            | Tools to present travel stories with images, text, and ambient sound.       |
+| Private Users        | The ability to keep memories personal or selectively share them.            |
 
 Unlike Google Earth or TravelMap, which focus on route exploration or satellite views, this project is about **emotional connection to place** — a personal globe of memories.
 ---
@@ -31,7 +31,48 @@ Unlike Google Earth or TravelMap, which focus on route exploration or satellite 
 - 🔐 Simple user login system to support private and personal experiences.
 - 🗂 Local or cloud-based file storage for user-uploaded media.
 - 🧭 Optional timeline view to scroll through journeys chronologically.
-- ✨ Clean, responsive UI design emphasizing emotional memory
+- ✨ Clean, responsive UI design emphasizing emotional memory presentation.
+- 🚀 Deployed version of the app (Heroku, Vercel, or Render).
+
+---
+
+### ⛓ Special Constraints
+
+- **Rendering performance**: 3D graphics must be optimized for smooth interaction across devices.
+- **File handling**: Uploading media requires size limits and secure processing (local or cloud).
+- **User authentication**: Must be secure, even if simplified for demo purposes.
+- **Scope control**: Avoid replicating full Google Earth functionality — focus on personal storytelling.
+
+---
+
+### 🌈 Expected Outcome
+
+By the end of the 10-week timeline, the final deliverables will include:
+
+- A functional 3D travel journal web app that supports:
+  - User login/logout
+  - Pinning locations on a 3D globe
+  - Uploading and viewing multimedia content per location
+- An artistic and intuitive user experience to explore travel memories emotionally.
+- Well-documented source code hosted on GitHub with clean structure and modular design.
+- Optional bonus features: AI-generated memory captions, music integration, private/public toggle.
+
+This project is a creative fusion of geography, memory, and interaction — **a digital globe where emotions live**.
+
+---
+
+## 🛠 Tech Stack
+
+- **Frontend**: HTML/CSS/JS, Globe.gl or CesiumJS  
+- **Backend**: Flask (Python)  
+- **Database**: SQLite or PostgreSQL  
+- **Optional**: OpenAI API, Cloudinary/S3 for uploads
+
+---
+
+## 📁 Client info
+
+Fiona Xu (jingx23@uw.edu)
 
 ## 💻 Virtual Environment Setup (Windows)
 
@@ -104,4 +145,63 @@ To run this project locally:
 - ✅ Firebase Storage & Firestore successfully storing uploaded media  
 - ✅ Basic upload and retrieval API completed  
 - 🚧 Currently building UI to display uploaded content by location  
-- 🔜 Next: Add user authentication and timeline sorting
+- 🔜 Next: Add user authenticatiogit add README.md
+
+
+
+## 📝 Client Feedback: 3D Earth Explorer
+
+### ✅ Features Reviewed
+
+- **Interactive 3D Globe**  
+  Users can explore a 3D-rendered Earth with mouse interaction using `three.js` and `OrbitControls`.
+
+- **City Search & Marker Placement**  
+  Users can input city names to dynamically add new markers via backend API calls.
+
+- **Location Detail Modal with Media Upload**  
+  Clicking on a marker opens a modal showing the location name, coordinates, and an area to upload related media (images/videos).
+
+---
+
+### 🟩 Approved Features
+
+- The 3D interaction and visual presentation are well-crafted and provide a smooth user experience.
+- Modal design is clear, elegant, and effectively displays uploaded media.
+- Zoom buttons and marker hover interactions add polish and usability.
+
+---
+
+### 🐞 Bugs Identified
+
+- Users are currently unable to search for place names independently.
+- The number of place names is not all large.
+
+---
+
+### 💡 Suggested Improvements
+
+1. **Input Validation & Error UI**  
+   Improve feedback when a city isn't found—e.g., highlight the input box or show a styled error message instead of just an alert.
+
+2. **Increase the number of cities and improve the icon display**  
+   When fetching or uploading files, consider adding a loading spinner to improve clarity and feedback.
+
+---
+
+### 📘 Reflection & Next Steps
+
+- Developer has successfully implemented **3+ core features** and demonstrated good front-end architecture.
+
+
+- **Suggested next focus areas**:
+  - Improve the overall UI design and hope that the interface will be more interesting.
+  - Fix mobile layout responsiveness and modal display edge cases.
+
+Keep up the great work!
+
+### 📌 Progress & Known Issues 05/16
+
+- ✅ Most core features have been implemented and are functional.
+- 🛠️ Currently working on refining final UI details for improved user experience.
+- 🐞 No major bugs found; minor UI alignment issues are being addressed.
