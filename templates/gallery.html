@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Gallery</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000; /* 黑色背景 */
+            font-family: 'Arial', sans-serif;
+            color: #fff;      /* 白色字体 */
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #333; font-size: 2.5em; margin-bottom: 10px; }
+        .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px; }
+        .media-item {
+            background: rgba(30, 30, 30, 0.95);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+        .media-item:hover { transform: translateY(-5px); }
+        .media-item img, .media-item video { width: 100%; height: 200px; object-fit: cover; }
+        .media-info { padding: 15px; }
+        .media-info p { margin: 0; color: #666; font-size: 0.9em; }
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            transition: background 0.3s ease;
+        }
+        .back-button:hover {
+            background: #45a049;
+        }
+        .loading { text-align: center; padding: 20px; font-size: 1.2em; color: #666; }
+        .error { text-align: center; padding: 20px; color: #ff4444; background: #ffe6e6; border-radius: 5px; margin: 20px 0; }
+        .location-section { margin-bottom: 40px; }
+        .location-section h2 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">🌍 Earth Explorer</div>
+    <div style="text-align:center; margin-top:10px;">
+        <a href="/gallery" style="display:inline-block; padding:10px 25px; background:#4CAF50; color:white; border-radius:25px; text-decoration:none; font-size:18px; margin-bottom:10px;">进入媒体库（Gallery）</a>
+    </div>
+    <div class="header">
+        <h1>Media Gallery</h1>
+        <a href="/" class="back-button">Back to Earth Explorer</a>
+    </div>
+    <div id="gallery">
+        <div class="loading">Loading media files...</div>
+    </div>
+    <script>
+        async function loadAllMedia() {
+            try {
+                const response = await fetch('/api/all-media');
+                if (!response.ok) throw new Error('Failed to load media files');
+                const mediaList = await response.json();
+                const gallery = document.getElementById('gallery');
+                gallery.innerHTML = '';
+                if (mediaList.length === 0) {
+                    gallery.innerHTML = '<div class="error">No media files found</div>';
+                    return;
+                }
+                // Group media by location
+                const mediaByLocation = {};
+                mediaList.forEach(media => {
+                    if (!mediaByLocation[media.location_id]) mediaByLocation[media.location_id] = [];
+                    mediaByLocation[media.location_id].push(media);
+                });
+                Object.entries(mediaByLocation).forEach(([location, media]) => {
+                    const locationSection = document.createElement('div');
+                    locationSection.className = 'location-section';
+                    const locationTitle = document.createElement('h2');
+                    locationTitle.textContent = location;
+                    locationSection.appendChild(locationTitle);
+                    const mediaGrid = document.createElement('div');
+                    mediaGrid.className = 'gallery';
+                    media.forEach(mediaItem => {
+                        const mediaItemDiv = document.createElement('div');
+                        mediaItemDiv.className = 'media-item';
+                        let mediaElement;
+                        if (mediaItem.type.startsWith('image/')) {
+                            mediaElement = document.createElement('img');
+                            mediaElement.src = mediaItem.url;
+                            mediaElement.alt = mediaItem.filename;
+                        } else if (mediaItem.type.startsWith('video/')) {
+                            mediaElement = document.createElement('video');
+                            mediaElement.src = mediaItem.url;
+                            mediaElement.controls = true;
+                        }
+                        const mediaInfo = document.createElement('div');
+                        mediaInfo.className = 'media-info';
+                        mediaInfo.innerHTML = `<p>Uploaded: ${new Date(mediaItem.created_at).toLocaleDateString()}</p>`;
+                        mediaItemDiv.appendChild(mediaElement);
+                        mediaItemDiv.appendChild(mediaInfo);
+                        mediaGrid.appendChild(mediaItemDiv);
+                    });
+                    locationSection.appendChild(mediaGrid);
+                    gallery.appendChild(locationSection);
+                });
+            } catch (error) {
+                const gallery = document.getElementById('gallery');
+                gallery.innerHTML = `<div class="error">Error loading media files: ${error.message}</div>`;
+            }
+        }
+        document.addEventListener('DOMContentLoaded', loadAllMedia);
+    </script>
+</body>
+</html>
