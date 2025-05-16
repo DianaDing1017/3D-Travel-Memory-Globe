@@ -199,3 +199,9 @@ To run this project locally:
   - Fix mobile layout responsiveness and modal display edge cases.
 
 Keep up the great work!
+
+### 📌 Progress & Known Issues 05/16
+
+- ✅ Most core features have been implemented and are functional.
+- 🛠️ Currently working on refining final UI details for improved user experience.
+- 🐞 No major bugs found; minor UI alignment issues are being addressed.
