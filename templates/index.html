@@ -55,6 +55,15 @@
         #search input:focus {
             background: rgba(255, 255, 255, 0.15);
         }
+        #search input.error {
+            border: 2px solid #ff4444;
+            animation: shake 0.5s;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
         #search input::placeholder {
             color: rgba(255, 255, 255, 0.7);
         }
@@ -72,6 +81,28 @@
         #search button:hover {
             background: #45a049;
             transform: scale(1.05);
+        }
+        #search button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .error-message {
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 68, 68, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 100;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -10px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
         }
         #zoom-controls {
             display: flex;
@@ -204,13 +235,36 @@
             background: #45a049;
             transform: scale(1.05);
         }
+        #gallery-fab {
+            position: fixed;
+            right: 32px;
+            bottom: 32px;
+            z-index: 9999;
+            width: 56px;
+            height: 56px;
+            background: #4CAF50;
+            border-radius: 50%;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        #gallery-fab:hover {
+            background: #388e3c;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
+        #gallery-fab svg {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div id="info">🌍 Earth Explorer</div>
     <div id="search">
         <input type="text" id="cityInput" placeholder="Search for a city...">
-        <button onclick="searchLocation()">Search</button>
+        <button id="searchButton" onclick="searchLocation()">Search</button>
         <div id="zoom-controls">
             <button onclick="zoomIn()">+</button>
             <button onclick="zoomOut()">-</button>
@@ -240,6 +294,14 @@
             <div class="media-preview" id="media-preview"></div>
         </div>
     </div>
+    <div id="errorMessage" class="error-message" style="display: none;"></div>
+    <!-- Gallery Floating Button -->
+    <a href="/gallery" id="gallery-fab" title="进入媒体库（Gallery）">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="#fff">
+            <circle cx="12" cy="12" r="12" fill="#4CAF50"/>
+            <path d="M7 17l5-5 5 5V7H7z" fill="#fff"/>
+        </svg>
+    </a>
     <script>
         let scene, camera, renderer, earth, markers = [], controls, stars;
         const locations = [
@@ -252,7 +314,99 @@
             { name: 'Sydney', lat: -33.8688, lon: 151.2093 },
             { name: 'Dubai', lat: 25.2048, lon: 55.2708 },
             { name: 'Singapore', lat: 1.3521, lon: 103.8198 },
-            { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729 }
+            { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729 },
+            { name: 'Shanghai', lat: 31.2304, lon: 121.4737 },
+            { name: 'Hong Kong', lat: 22.3193, lon: 114.1694 },
+            { name: 'Taipei', lat: 25.0330, lon: 121.5654 },
+            { name: 'Seoul', lat: 37.5665, lon: 126.9780 },
+            { name: 'Bangkok', lat: 13.7563, lon: 100.5018 },
+            { name: 'Mumbai', lat: 19.0760, lon: 72.8777 },
+            { name: 'Istanbul', lat: 41.0082, lon: 28.9784 },
+            { name: 'Rome', lat: 41.9028, lon: 12.4964 },
+            { name: 'Berlin', lat: 52.5200, lon: 13.4050 },
+            { name: 'Amsterdam', lat: 52.3676, lon: 4.9041 },
+            { name: 'Vienna', lat: 48.2082, lon: 16.3738 },
+            { name: 'Prague', lat: 50.0755, lon: 14.4378 },
+            { name: 'Barcelona', lat: 41.3851, lon: 2.1734 },
+            { name: 'Madrid', lat: 40.4168, lon: -3.7038 },
+            { name: 'Lisbon', lat: 38.7223, lon: -9.1393 },
+            { name: 'Dublin', lat: 53.3498, lon: -6.2603 },
+            { name: 'Edinburgh', lat: 55.9533, lon: -3.1883 },
+            { name: 'Copenhagen', lat: 55.6761, lon: 12.5683 },
+            { name: 'Stockholm', lat: 59.3293, lon: 18.0686 },
+            { name: 'Helsinki', lat: 60.1699, lon: 24.9384 },
+            { name: 'Oslo', lat: 59.9139, lon: 10.7522 },
+            { name: 'Reykjavik', lat: 64.1265, lon: -21.8174 },
+            { name: 'Toronto', lat: 43.6532, lon: -79.3832 },
+            { name: 'Vancouver', lat: 49.2827, lon: -123.1207 },
+            { name: 'Montreal', lat: 45.5017, lon: -73.5673 },
+            { name: 'Chicago', lat: 41.8781, lon: -87.6298 },
+            { name: 'Los Angeles', lat: 34.0522, lon: -118.2437 },
+            { name: 'San Francisco', lat: 37.7749, lon: -122.4194 },
+            { name: 'Miami', lat: 25.7617, lon: -80.1918 },
+            { name: 'Mexico City', lat: 19.4326, lon: -99.1332 },
+            { name: 'Buenos Aires', lat: -34.6037, lon: -58.3816 },
+            { name: 'Santiago', lat: -33.4489, lon: -70.6693 },
+            { name: 'Lima', lat: -12.0464, lon: -77.0428 },
+            { name: 'Bogota', lat: 4.7110, lon: -74.0721 },
+            { name: 'Cape Town', lat: -33.9249, lon: 18.4241 },
+            { name: 'Johannesburg', lat: -26.2041, lon: 28.0473 },
+            { name: 'Nairobi', lat: -1.2921, lon: 36.8219 },
+            { name: 'Cairo', lat: 30.0444, lon: 31.2357 },
+            { name: 'Marrakech', lat: 31.6295, lon: -7.9811 },
+            { name: 'Jerusalem', lat: 31.7683, lon: 35.2137 },
+            { name: 'Dubai', lat: 25.2048, lon: 55.2708 },
+            { name: 'Doha', lat: 25.2769, lon: 51.5200 },
+            { name: 'Moscow', lat: 55.7558, lon: 37.6173 },
+            { name: 'St. Petersburg', lat: 59.9343, lon: 30.3351 },
+            { name: 'Warsaw', lat: 52.2297, lon: 21.0122 },
+            { name: 'Budapest', lat: 47.4979, lon: 19.0402 },
+            { name: 'Athens', lat: 37.9838, lon: 23.7275 },
+            { name: 'Dubrovnik', lat: 42.6507, lon: 18.0944 },
+            { name: 'Venice', lat: 45.4408, lon: 12.3155 },
+            { name: 'Florence', lat: 43.7696, lon: 11.2558 },
+            { name: 'Milan', lat: 45.4642, lon: 9.1900 },
+            { name: 'Zurich', lat: 47.3769, lon: 8.5417 },
+            { name: 'Geneva', lat: 46.2044, lon: 6.1432 },
+            { name: 'Brussels', lat: 50.8503, lon: 4.3517 },
+            { name: 'Antwerp', lat: 51.2194, lon: 4.4024 },
+            { name: 'Ghent', lat: 51.0543, lon: 3.7174 },
+            { name: 'Bruges', lat: 51.2093, lon: 3.2247 },
+            { name: 'Luxembourg', lat: 49.6116, lon: 6.1319 },
+            { name: 'Monaco', lat: 43.7384, lon: 7.4246 },
+            { name: 'San Marino', lat: 43.9424, lon: 12.4578 },
+            { name: 'Vatican City', lat: 41.9029, lon: 12.4534 },
+            { name: 'Andorra la Vella', lat: 42.5063, lon: 1.5218 },
+            { name: 'Gibraltar', lat: 36.1408, lon: -5.3536 },
+            { name: 'Valletta', lat: 35.8989, lon: 14.5146 },
+            { name: 'Nicosia', lat: 35.1856, lon: 33.3823 },
+            { name: 'Riga', lat: 56.9496, lon: 24.1052 },
+            { name: 'Tallinn', lat: 59.4370, lon: 24.7536 },
+            { name: 'Vilnius', lat: 54.6872, lon: 25.2797 },
+            { name: 'Bratislava', lat: 48.1486, lon: 17.1077 },
+            { name: 'Ljubljana', lat: 46.0569, lon: 14.5058 },
+            { name: 'Zagreb', lat: 45.8150, lon: 15.9819 },
+            { name: 'Sarajevo', lat: 43.8563, lon: 18.4131 },
+            { name: 'Belgrade', lat: 44.7866, lon: 20.4489 },
+            { name: 'Sofia', lat: 42.6977, lon: 23.3219 },
+            { name: 'Bucharest', lat: 44.4268, lon: 26.1025 },
+            { name: 'Chisinau', lat: 47.0105, lon: 28.8638 },
+            { name: 'Kiev', lat: 50.4501, lon: 30.5234 },
+            { name: 'Minsk', lat: 53.9045, lon: 27.5615 },
+            { name: 'Warsaw', lat: 52.2297, lon: 21.0122 },
+            { name: 'Prague', lat: 50.0755, lon: 14.4378 },
+            { name: 'Vienna', lat: 48.2082, lon: 16.3738 },
+            { name: 'Budapest', lat: 47.4979, lon: 19.0402 },
+            { name: 'Bratislava', lat: 48.1486, lon: 17.1077 },
+            { name: 'Ljubljana', lat: 46.0569, lon: 14.5058 },
+            { name: 'Zagreb', lat: 45.8150, lon: 15.9819 },
+            { name: 'Sarajevo', lat: 43.8563, lon: 18.4131 },
+            { name: 'Belgrade', lat: 44.7866, lon: 20.4489 },
+            { name: 'Sofia', lat: 42.6977, lon: 23.3219 },
+            { name: 'Bucharest', lat: 44.4268, lon: 26.1025 },
+            { name: 'Chisinau', lat: 47.0105, lon: 28.8638 },
+            { name: 'Kiev', lat: 50.4501, lon: 30.5234 },
+            { name: 'Minsk', lat: 53.9045, lon: 27.5615 }
         ];
 
         init();
@@ -405,23 +559,55 @@
         }
 
         function searchLocation() {
-            const city = document.getElementById('cityInput').value;
-            if (city) {
-                fetch(`/api/location/${city}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            alert('Location not found');
-                            return;
-                        }
-                        addMarker(data.lat, data.lon, data.name);
-                        document.getElementById('cityInput').value = '';
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error searching for location');
-                    });
+            const cityInput = document.getElementById('cityInput');
+            const searchButton = document.getElementById('searchButton');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            const city = cityInput.value.trim();
+            if (!city) {
+                showError('Please enter a city name');
+                return;
             }
+            
+            // 禁用搜索按钮并显示加载状态
+            searchButton.disabled = true;
+            searchButton.textContent = 'Searching...';
+            errorMessage.style.display = 'none';
+            cityInput.classList.remove('error');
+            
+            fetch(`/api/location/${encodeURIComponent(city)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Location not found');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    addMarker(data.lat, data.lon, data.name);
+                    cityInput.value = '';
+                })
+                .catch(error => {
+                    showError(error.message);
+                    cityInput.classList.add('error');
+                })
+                .finally(() => {
+                    searchButton.disabled = false;
+                    searchButton.textContent = 'Search';
+                });
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 3000);
         }
 
         function zoomIn() {
@@ -472,29 +658,6 @@
             loadLocationMedia(currentLocationId);
         }
 
-        function loadLocationMedia(locationId) {
-            fetch(`/api/location/${locationId}/media`)
-                .then(response => response.json())
-                .then(mediaList => {
-                    const preview = document.getElementById('media-preview');
-                    preview.innerHTML = '';  // 清除现有内容
-                    
-                    mediaList.forEach(media => {
-                        if (media.type.startsWith('image/')) {
-                            const img = document.createElement('img');
-                            img.src = media.url;
-                            preview.appendChild(img);
-                        } else if (media.type.startsWith('video/')) {
-                            const video = document.createElement('video');
-                            video.src = media.url;
-                            video.controls = true;
-                            preview.appendChild(video);
-                        }
-                    });
-                })
-                .catch(error => console.error('Error loading media:', error));
-        }
-
         async function handleFileUpload(event) {
             const files = event.target.files;
             const preview = document.getElementById('media-preview');
@@ -502,7 +665,11 @@
             const progressBar = progress.querySelector('.progress');
             const progressText = progress.querySelector('.progress-text');
             
+            console.log('Files selected:', files);
+            
             for (const file of files) {
+                console.log('Processing file:', file.name, 'Type:', file.type);
+                
                 progress.style.display = 'block';
                 progressBar.style.width = '0%';
                 progressText.textContent = 'Uploading... 0%';
@@ -511,30 +678,55 @@
                 formData.append('file', file);
                 formData.append('location_id', currentLocationId);
                 
+                console.log('FormData created:', formData);
+                
                 try {
+                    console.log('Starting upload...');
                     const response = await fetch('/api/upload', {
                         method: 'POST',
                         body: formData
                     });
                     
+                    console.log('Upload response status:', response.status);
                     const result = await response.json();
+                    console.log('Upload response data:', result);
                     
                     if (response.ok) {
+                        // 创建媒体元素
+                        let mediaElement;
                         if (file.type.startsWith('image/')) {
-                            const img = document.createElement('img');
-                            img.src = result.url;
-                            preview.appendChild(img);
+                            mediaElement = document.createElement('img');
+                            mediaElement.src = result.url;
+                            mediaElement.alt = file.name;
+                            console.log('Created image element:', mediaElement);
                         } else if (file.type.startsWith('video/')) {
-                            const video = document.createElement('video');
-                            video.src = result.url;
-                            video.controls = true;
-                            preview.appendChild(video);
+                            mediaElement = document.createElement('video');
+                            mediaElement.src = result.url;
+                            mediaElement.controls = true;
+                            console.log('Created video element:', mediaElement);
+                        }
+                        
+                        if (mediaElement) {
+                            // 添加样式
+                            mediaElement.style.width = '100%';
+                            mediaElement.style.height = '150px';
+                            mediaElement.style.objectFit = 'cover';
+                            mediaElement.style.borderRadius = '8px';
+                            
+                            // 添加到预览区域
+                            preview.appendChild(mediaElement);
+                            console.log('Media element added to preview');
+                            
+                            // 重新加载该位置的所有媒体
+                            loadLocationMedia(currentLocationId);
                         }
                     } else {
                         console.error('Upload failed:', result.error);
+                        showError(result.error || 'Upload failed');
                     }
                 } catch (error) {
                     console.error('Upload error:', error);
+                    showError('Error uploading file: ' + error.message);
                 }
                 
                 progress.style.display = 'none';
@@ -542,6 +734,52 @@
             
             // 清除文件选择
             event.target.value = '';
+        }
+
+        function loadLocationMedia(locationId) {
+            console.log('Loading media for location:', locationId);
+            fetch(`/api/location/${locationId}/media`)
+                .then(response => {
+                    console.log('Media response status:', response.status);
+                    return response.json();
+                })
+                .then(mediaList => {
+                    console.log('Loaded media list:', mediaList);
+                    const preview = document.getElementById('media-preview');
+                    preview.innerHTML = '';  // 清除现有内容
+                    
+                    mediaList.forEach(media => {
+                        console.log('Processing media:', media);
+                        let mediaElement;
+                        if (media.type.startsWith('image/')) {
+                            mediaElement = document.createElement('img');
+                            mediaElement.src = media.url;
+                            mediaElement.alt = media.filename;
+                            console.log('Created image element:', mediaElement);
+                        } else if (media.type.startsWith('video/')) {
+                            mediaElement = document.createElement('video');
+                            mediaElement.src = media.url;
+                            mediaElement.controls = true;
+                            console.log('Created video element:', mediaElement);
+                        }
+                        
+                        if (mediaElement) {
+                            // 添加样式
+                            mediaElement.style.width = '100%';
+                            mediaElement.style.height = '150px';
+                            mediaElement.style.objectFit = 'cover';
+                            mediaElement.style.borderRadius = '8px';
+                            
+                            // 添加到预览区域
+                            preview.appendChild(mediaElement);
+                            console.log('Media element added to preview');
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading media:', error);
+                    showError('Error loading media files: ' + error.message);
+                });
         }
 
         function closeModal() {
