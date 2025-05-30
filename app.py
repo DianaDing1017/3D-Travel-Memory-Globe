@@ -153,5 +153,29 @@ def get_all_media():
         print('Error getting all media:', str(e))
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/delete-media/<media_id>', methods=['DELETE'])
+def delete_media(media_id):
+    try:
+        # 读取media.json
+        media_json_path = os.path.join(UPLOAD_FOLDER, 'media.json')
+        if not os.path.exists(media_json_path):
+            return jsonify({'error': 'No media.json file found'}), 404
+        with open(media_json_path, 'r', encoding='utf-8') as f:
+            media_list = json.load(f)
+        # 查找要删除的media
+        media = next((m for m in media_list if m['id'] == media_id), None)
+        if not media:
+            return jsonify({'error': 'Media not found'}), 404
+        # 删除文件
+        if os.path.exists(media['file_path']):
+            os.remove(media['file_path'])
+        # 移除media记录
+        media_list = [m for m in media_list if m['id'] != media_id]
+        with open(media_json_path, 'w', encoding='utf-8') as f:
+            json.dump(media_list, f, ensure_ascii=False, indent=2)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True) 

@@ -52,9 +52,6 @@
 </head>
 <body>
     <div id="info">🌍 Earth Explorer</div>
-    <div style="text-align:center; margin-top:10px;">
-        <a href="/gallery" style="display:inline-block; padding:10px 25px; background:#4CAF50; color:white; border-radius:25px; text-decoration:none; font-size:18px; margin-bottom:10px;">进入媒体库（Gallery）</a>
-    </div>
     <div class="header">
         <h1>Media Gallery</h1>
         <a href="/" class="back-button">Back to Earth Explorer</a>
@@ -93,9 +90,46 @@
                         mediaItemDiv.className = 'media-item';
                         let mediaElement;
                         if (mediaItem.type.startsWith('image/')) {
+                            const link = document.createElement('a');
+                            link.href = mediaItem.url;
+                            link.target = '_blank';
+                            link.title = 'Click to view full image';
                             mediaElement = document.createElement('img');
                             mediaElement.src = mediaItem.url;
                             mediaElement.alt = mediaItem.filename;
+                            link.appendChild(mediaElement);
+                            mediaItemDiv.appendChild(link);
+                            // Check按钮
+                            const checkBtn = document.createElement('button');
+                            checkBtn.textContent = 'Check';
+                            checkBtn.style.margin = '4px 8px 4px 0';
+                            checkBtn.style.background = '#4CAF50';
+                            checkBtn.style.color = 'white';
+                            checkBtn.style.border = 'none';
+                            checkBtn.style.borderRadius = '4px';
+                            checkBtn.style.padding = '4px 12px';
+                            checkBtn.style.cursor = 'pointer';
+                            checkBtn.onclick = () => window.open(mediaItem.url, '_blank');
+                            mediaItemDiv.appendChild(checkBtn);
+                            // Delete按钮
+                            const delBtn = document.createElement('button');
+                            delBtn.textContent = 'Delete';
+                            delBtn.style.margin = '4px 0 4px 0';
+                            delBtn.style.background = '#e53935';
+                            delBtn.style.color = 'white';
+                            delBtn.style.border = 'none';
+                            delBtn.style.borderRadius = '4px';
+                            delBtn.style.padding = '4px 12px';
+                            delBtn.style.cursor = 'pointer';
+                            delBtn.onclick = async () => {
+                                if (confirm('Are you sure you want to delete this image?')) {
+                                    // 前端立即移除
+                                    mediaItemDiv.remove();
+                                    // 后端请求删除
+                                    await fetch(`/api/delete-media/${mediaItem.id}`, { method: 'DELETE' });
+                                }
+                            };
+                            mediaItemDiv.appendChild(delBtn);
                         } else if (mediaItem.type.startsWith('video/')) {
                             mediaElement = document.createElement('video');
                             mediaElement.src = mediaItem.url;

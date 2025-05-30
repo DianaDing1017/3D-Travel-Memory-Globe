@@ -590,6 +590,8 @@
                     }
                     addMarker(data.lat, data.lon, data.name);
                     cityInput.value = '';
+                    // 搜索成功后自动弹出上传media的界面
+                    showModal({ name: data.name, lat: data.lat, lon: data.lon });
                 })
                 .catch(error => {
                     showError(error.message);
