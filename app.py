@@ -13,7 +13,7 @@ app = Flask(__name__)
 geolocator = Nominatim(user_agent="travelmap_3d_globe_app", timeout=10)
 
 # 设置上传文件夹
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static/uploads')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'mov'}
 
 # 确保上传文件夹存在
@@ -178,4 +178,6 @@ def delete_media(media_id):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    # 修改为使用环境变量中的端口
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port) 

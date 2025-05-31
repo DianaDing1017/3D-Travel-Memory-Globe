@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: 3D-Travel-Memory-Globe
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    plan: free 
